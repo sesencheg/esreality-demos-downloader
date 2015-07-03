@@ -1,3 +1,4 @@
+
 /**
  * Cyberfight Demos Downloader 0.1.0
  * Copyright 2015 Egor Kotlyarov aka Danmer
@@ -6,11 +7,13 @@
  * Usage: npm start [game_id1] [game_id2] ...
  */
 
+var http    = require('http');
 var fs      = require('fs');
 var _       = require('lodash');
 var request = require('request');
 var jsdom   = require('jsdom');
 var mkdirp  = require('mkdirp');
+var iconv   = require('iconv-lite');
 
 var gameIds = process.argv.splice(2);
 
@@ -138,32 +141,43 @@ function parseDemoLink(demoLink) {
 function getDemoInfo(demoLink) {
   console.log('request demo info');
   return new Promise(function(resolve, reject) {
-    jsdom.env({
-      url: demoLink,
-      done: function(errors, window) {
-        var demoInfo = null
-        if (!errors) {
-          var $infoTable = window.document.querySelectorAll('.blockheaddarkBig')[0].parentNode.parentNode;
-          demoInfo = {
-            source: demoLink,
-            id: demoLink.match(/\d+/)[0],
-            name: $infoTable.querySelector('tr:nth-child(1)').textContent.trim(),
-            pov: $infoTable.querySelector('tr:nth-child(2) td:nth-child(2)').textContent.trim(),
-            map: $infoTable.querySelector('tr:nth-child(3) td:nth-child(2)').textContent.trim(),
-            type: $infoTable.querySelector('tr:nth-child(4) td:nth-child(2)').textContent.trim(),
-            tourney: $infoTable.querySelector('tr:nth-child(5) td:nth-child(2)').textContent.trim(),
-            downloads: $infoTable.querySelector('tr:nth-child(6) td:nth-child(2)').textContent.trim(),
-            description: $infoTable.querySelector('tr:nth-child(7) td:nth-child(2)').textContent.trim(),
-            fileName: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[0].trim(),
-            fileSize: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[2].trim().replace('(', '').replace(')', ''),
-            fileLink: $infoTable.querySelector('tr:nth-child(8) a').href
-          };
-          window.close();
+    http.get(demoLink, function(response) {
+      response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
+        if (error) {
+          console.log('reqeust error', error);
+          reject();
         } else {
-          console.error('request error', errors);
+          jsdom.env({
+            html: decodedBody,
+            done: function(errors, window) {
+              var demoInfo = null
+              if (!errors) {
+                var $infoTable = window.document.querySelectorAll('.blockheaddarkBig')[0].parentNode.parentNode;
+                demoInfo = {
+                  source: demoLink,
+                  id: demoLink.match(/\d+/)[0],
+                  name: $infoTable.querySelector('tr:nth-child(1)').textContent.trim(),
+                  pov: $infoTable.querySelector('tr:nth-child(2) td:nth-child(2)').textContent.trim(),
+                  map: $infoTable.querySelector('tr:nth-child(3) td:nth-child(2)').textContent.trim(),
+                  type: $infoTable.querySelector('tr:nth-child(4) td:nth-child(2)').textContent.trim(),
+                  tourney: $infoTable.querySelector('tr:nth-child(5) td:nth-child(2)').textContent.trim(),
+                  downloads: $infoTable.querySelector('tr:nth-child(6) td:nth-child(2)').textContent.trim(),
+                  description: $infoTable.querySelector('tr:nth-child(7) td:nth-child(2)').textContent.trim(),
+                  fileName: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[0].trim(),
+                  fileSize: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[2].trim().replace('(', '').replace(')', ''),
+                  fileLink: $infoTable.querySelector('tr:nth-child(8) a').href
+                };
+                console.log(demoInfo);
+                window.close();
+                resolve(demoInfo);
+              } else {
+                console.error('data error', errors);
+                reject();
+              }
+            }
+          });
         }
-        resolve(demoInfo);
-      }
+      });
     });
   });
 }
@@ -175,7 +189,7 @@ function downloadDemo(demoInfo) {
     fs.exists(demoDir, function(exists) {
       if (!exists) {
         mkdirp(demoDir, function() {
-          fs.writeFile(demoDir + '/info.json', JSON.stringify(demoInfo, null, 2));
+          fs.writeFile(demoDir + '/info.json', JSON.stringify(demoInfo, null, 2), resolve);
           request(demoInfo.fileLink, resolve).pipe(fs.createWriteStream(demoDir + '/' + demoInfo.fileName))
         })
       }

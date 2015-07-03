@@ -22,6 +22,7 @@
     "downloader"
   ],
   "dependencies": {
+    "iconv-lite": "^0.4.10",
     "jsdom": "^3.1.2",
     "lodash": "^3.10.0",
     "mkdirp": "^0.5.1",
