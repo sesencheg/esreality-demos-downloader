@@ -165,7 +165,7 @@ function getDemoInfo(demoLink) {
                   description: $infoTable.querySelector('tr:nth-child(7) td:nth-child(2)').textContent.trim(),
                   fileName: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[0].trim(),
                   fileSize: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[2].trim().replace('(', '').replace(')', ''),
-                  fileLink: $infoTable.querySelector('tr:nth-child(8) a').href
+                  fileLink: $infoTable.querySelector('tr:nth-child(8) a').href.replace('file://', 'http://cyberfight.ru')
                 };
                 console.log(demoInfo);
                 window.close();
