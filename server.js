@@ -9,6 +9,7 @@
 var http    = require('http');
 var fs      = require('fs');
 var _       = require('lodash');
+var charset = require('charset');
 var cheerio = require('cheerio');
 var mkdirp  = require('mkdirp');
 var iconv   = require('iconv-lite');
@@ -44,7 +45,8 @@ function getPagesLinks(gameId) {
   return new Promise(function(resolve, reject) {
     http.get('http://cyberfight.ru/site/demos/search/?game_id=' + gameId + '&order_by=time_posted&order_type=desc&qry=&page=0', function(response) {
       var pagesLinks = [];
-      response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
+      var sourceCharset = charset(response.headers['content-type']);
+      response.pipe(iconv.decodeStream(sourceCharset)).collect(function(error, decodedBody) {
         if (!error && response.statusCode == 200) {
           var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
           $('a[href^="/site/demos/search/?game_id=' + gameId + '"][href*="page"]').each(function(index, element) {
@@ -87,7 +89,8 @@ function getDemosLinks(pageLink) {
   return new Promise(function(resolve, reject) {
     http.get(pageLink, function(response) {
       var demosLinks = [];
-      response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
+      var sourceCharset = charset(response.headers['content-type']);
+      response.pipe(iconv.decodeStream(sourceCharset)).collect(function(error, decodedBody) {
         if (!error && response.statusCode == 200) {
           var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
           $('tr[valign="middle"] a[href^="/site/demos/"][href$="/"]').each(function(index, element) {
@@ -144,7 +147,8 @@ function getDemoInfo(demoLink) {
   return new Promise(function(resolve, reject) {
     http.get(demoLink, function(response) {
       var demosLinks = [];
-      response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
+      var sourceCharset = charset(response.headers['content-type']);
+      response.pipe(iconv.decodeStream(sourceCharset)).collect(function(error, decodedBody) {
         if (!error && response.statusCode == 200) {
           var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
           var $infoTable = $('.blockheaddarkBig').parent().parent();
