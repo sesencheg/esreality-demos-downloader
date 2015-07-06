@@ -170,7 +170,7 @@ function getDemoInfo(demoLink) {
             description: $infoTable.find('tr:nth-child(7) td:nth-child(2)').eq(0).text().trim(),
             fileId: fileId,
             fileName: fileInfo[0],
-            fileSize: fileInfo[1] + ' ' +  fileInfo[2].replace(/\(\)/, ''),
+            fileSize: fileInfo[1].replace('(', '') + ' ' +  fileInfo[2].replace(')', ''),
             fileLink: 'http://files.cyberfight.ru/' + fileId + '/' + fileInfo[0]
           };
           console.log(demoInfo);
