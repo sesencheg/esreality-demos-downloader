@@ -1,12 +1,10 @@
 # Cyberfight Demos Downloader
 
->  The script for downloading demos from the [cyberfight.ru](http://cyberfight.ru)
+>  The script for downloading demos from [cyberfight.ru](http://cyberfight.ru)
 
 ## Install
 
 Required: [node.js](https://nodejs.org/) > 0.12 or [io.js](https://iojs.org) > 1.0
-
-For Windows users also required: [Python 2.7](http://www.python.org/download/) and [Visual Studio Express 2013 for Windows Desktop](http://www.visualstudio.com/downloads/download-visual-studio-vs#d-express-windows-desktop). See [jsdom docs](https://github.com/tmpvar/jsdom/tree/3.x#windows) for details.
 
 ```
 git clone https://github.com/danmer/c58-demos-downloader.git

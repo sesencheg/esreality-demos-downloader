@@ -1,5 +1,6 @@
 /**
- * Cyberfight Demos Downloader 0.1.0
+ * Cyberfight Demos Downloader
+ * Repository: https://github.com/Danmer/c58-demos-downloader
  * Copyright 2015 Egor Kotlyarov aka Danmer
  * Available under MIT license
  *

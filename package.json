@@ -1,7 +1,7 @@
 {
   "name": "c58-demos-downloader",
   "version": "0.2.1",
-  "description": "Cyberfight demos downloader",
+  "description": "The script for downloading demos from cyberfight.ru",
   "license": "MIT",
   "repository": "Danmer/c58-demos-downloader",
   "author": {
