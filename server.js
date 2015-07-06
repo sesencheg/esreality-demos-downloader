@@ -1,4 +1,3 @@
-
 /**
  * Cyberfight Demos Downloader 0.1.0
  * Copyright 2015 Egor Kotlyarov aka Danmer
@@ -10,8 +9,7 @@
 var http    = require('http');
 var fs      = require('fs');
 var _       = require('lodash');
-var request = require('request');
-var jsdom   = require('jsdom');
+var cheerio = require('cheerio');
 var mkdirp  = require('mkdirp');
 var iconv   = require('iconv-lite');
 
@@ -22,7 +20,7 @@ parseGameIds(gameIds).then(function() {
 })
 
 function parseGameIds(gamesIds) {
-  console.log('parse games ids. count: ', gamesIds.length);
+  console.log('parse games ids:', gamesIds);
   return new Promise(function(resolve, reject) {
     var gameId;
     var index = 0;
@@ -44,21 +42,22 @@ function parseGameIds(gamesIds) {
 function getPagesLinks(gameId) {
   console.log('request pages links');
   return new Promise(function(resolve, reject) {
-    jsdom.env({
-      url: 'http://cyberfight.ru/site/demos/search/?game_id=' + gameId + '&order_by=time_posted&order_type=desc&qry=&page=0',
-      done: function(errors, window) {
-        var pagesLinks = [];
-        if (!errors) {
-          var $pageLinks = window.document.querySelectorAll('a[href^="/site/demos/search/?game_id=' + gameId + '&order_by=time_posted&order_type=desc&qry=&page="]');
-          pagesLinks = _.uniq(_.pluck($pageLinks, 'href'));
+    http.get('http://cyberfight.ru/site/demos/search/?game_id=' + gameId + '&order_by=time_posted&order_type=desc&qry=&page=0', function(response) {
+      var pagesLinks = [];
+      response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
+        if (!error && response.statusCode == 200) {
+          var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
+          $('a[href^="/site/demos/search/?game_id=' + gameId + '"][href*="page"]').each(function(index, element) {
+            pagesLinks.push('http://cyberfight.ru' + element.attribs.href);
+          });
+          pagesLinks = _.uniq(pagesLinks);
+          // get 1 random page link for test
+          // pagesLinks = _.sample(pagesLinks, 1);
         } else {
-          console.error('request error', errors);
+          console.error('request error', error)
         }
-        // get 1 random page link for test
-        // pagesLinks = _.sample(pagesLinks, 1);
-        window.close();
         resolve(pagesLinks);
-      }
+      });
     });
   });
 }
@@ -86,21 +85,22 @@ function parsePagesLinks(pagesLinks) {
 function getDemosLinks(pageLink) {
   console.log('request demos links on pageLink');
   return new Promise(function(resolve, reject) {
-    jsdom.env({
-      url: pageLink,
-      done: function(errors, window) {
-        var demosLinks = [];
-        if (!errors) {
-          var $demosLinks = window.document.querySelectorAll('tr[valign="middle"] a[href^="/site/demos/"][href$="/"]');
-          demosLinks = _.uniq(_.pluck($demosLinks, 'href'));
+    http.get(pageLink, function(response) {
+      var demosLinks = [];
+      response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
+        if (!error && response.statusCode == 200) {
+          var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
+          $('tr[valign="middle"] a[href^="/site/demos/"][href$="/"]').each(function(index, element) {
+            demosLinks.push('http://cyberfight.ru' + element.attribs.href);
+          });
+          demosLinks = _.uniq(demosLinks);
+          // get 3 random demo links for test
+          // demosLinks = _.sample(demosLinks, 3);
         } else {
           console.error('request error', errors);
         }
-        // get 3 random demo links for test
-        // demosLinks = _.sample(demosLinks, 3);
-        window.close();
         resolve(demosLinks);
-      }
+      });
     });
   });
 }
@@ -132,6 +132,7 @@ function parseDemoLink(demoLink) {
       if (!exists) {
         getDemoInfo(demoLink).then(downloadDemo).then(resolve);
       } else {
+        console.log('already parsed. skip.')
         resolve()
       }
     });
@@ -142,40 +143,36 @@ function getDemoInfo(demoLink) {
   console.log('request demo info');
   return new Promise(function(resolve, reject) {
     http.get(demoLink, function(response) {
+      var demosLinks = [];
       response.pipe(iconv.decodeStream('win1251')).collect(function(error, decodedBody) {
-        if (error) {
-          console.log('reqeust error', error);
-          reject();
+        if (!error && response.statusCode == 200) {
+          var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
+          var $infoTable = $('.blockheaddarkBig').parent().parent();
+          var demoId = demoLink.match(/\d+/)[0];
+          var demoHref = $infoTable.find('tr:nth-child(8) a')['0'].attribs.href;
+          var fileId = demoHref.match(/file_id=(\d+)/)[1];
+          var fileInfo = $infoTable.find('tr:nth-child(8)').eq(0).text().trim().split(/\s+/);
+          var demoInfo = {
+            source: demoLink,
+            demoDir: 'demos/' + demoId,
+            demoId: demoId,
+            name: $infoTable.find('tr:nth-child(1)').eq(0).text().trim(),
+            pov: $infoTable.find('tr:nth-child(2) td:nth-child(2)').eq(0).text().trim(),
+            map: $infoTable.find('tr:nth-child(3) td:nth-child(2)').eq(0).text().trim(),
+            type: $infoTable.find('tr:nth-child(4) td:nth-child(2)').eq(0).text().trim(),
+            tourney: $infoTable.find('tr:nth-child(5) td:nth-child(2)').eq(0).text().trim(),
+            downloads: $infoTable.find('tr:nth-child(6) td:nth-child(2)').eq(0).text().trim(),
+            description: $infoTable.find('tr:nth-child(7) td:nth-child(2)').eq(0).text().trim(),
+            fileId: fileId,
+            fileName: fileInfo[0],
+            fileSize: fileInfo[1] + ' ' +  fileInfo[2].replace(/\(\)/, ''),
+            fileLink: 'http://files.cyberfight.ru/' + fileId + '/' + fileInfo[0]
+          };
+          console.log(demoInfo);
+          resolve(demoInfo);
         } else {
-          jsdom.env({
-            html: decodedBody,
-            done: function(errors, window) {
-              var demoInfo = null
-              if (!errors) {
-                var $infoTable = window.document.querySelectorAll('.blockheaddarkBig')[0].parentNode.parentNode;
-                demoInfo = {
-                  source: demoLink,
-                  id: demoLink.match(/\d+/)[0],
-                  name: $infoTable.querySelector('tr:nth-child(1)').textContent.trim(),
-                  pov: $infoTable.querySelector('tr:nth-child(2) td:nth-child(2)').textContent.trim(),
-                  map: $infoTable.querySelector('tr:nth-child(3) td:nth-child(2)').textContent.trim(),
-                  type: $infoTable.querySelector('tr:nth-child(4) td:nth-child(2)').textContent.trim(),
-                  tourney: $infoTable.querySelector('tr:nth-child(5) td:nth-child(2)').textContent.trim(),
-                  downloads: $infoTable.querySelector('tr:nth-child(6) td:nth-child(2)').textContent.trim(),
-                  description: $infoTable.querySelector('tr:nth-child(7) td:nth-child(2)').textContent.trim(),
-                  fileName: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[0].trim(),
-                  fileSize: $infoTable.querySelector('tr:nth-child(8)').textContent.trim().split('\n')[2].trim().replace('(', '').replace(')', ''),
-                  fileLink: $infoTable.querySelector('tr:nth-child(8) a').href.replace('file://', 'http://cyberfight.ru')
-                };
-                console.log(demoInfo);
-                window.close();
-                resolve(demoInfo);
-              } else {
-                console.error('data error', errors);
-                reject();
-              }
-            }
-          });
+          console.error('request error', errors);
+          reject();
         }
       });
     });
@@ -185,14 +182,13 @@ function getDemoInfo(demoLink) {
 function downloadDemo(demoInfo) {
   console.log('download demo');
   return new Promise(function(resolve, reject) {
-    var demoDir = 'demos/' + demoInfo.id;
-    fs.exists(demoDir, function(exists) {
-      if (!exists) {
-        mkdirp(demoDir, function() {
-          fs.writeFile(demoDir + '/info.json', JSON.stringify(demoInfo, null, 2), resolve);
-          request(demoInfo.fileLink, resolve).pipe(fs.createWriteStream(demoDir + '/' + demoInfo.fileName))
-        })
-      }
-    });
+    mkdirp(demoInfo.demoDir, function() {
+      var fileStream = fs.createWriteStream(demoInfo.demoDir + '/' + demoInfo.fileName);
+      fileStream.on('finish', resolve);
+      fs.writeFile(demoInfo.demoDir + '/info.json', JSON.stringify(demoInfo, null, 2));
+      http.get(demoInfo.fileLink, function(response) {
+        response.pipe(fileStream);
+      });
+    })
   });
 }
