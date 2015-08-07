@@ -4,7 +4,7 @@
  * Copyright 2015 Egor Kotlyarov aka Danmer
  * Available under MIT license
  *
- * Usage: npm start [game_id1] [game_id2] ...
+ * Usage: node demos.js [game_id1] [game_id2] ...
  */
 
 var http        = require('http');

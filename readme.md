@@ -1,24 +1,32 @@
-# Cyberfight Demos Downloader
+# Cyberfight Media Downloader
 
->  The script for downloading demos from [cyberfight.ru](http://cyberfight.ru)
+>  The script for automatic downloading photos and demos from [cyberfight.ru](http://cyberfight.ru)
 
 ## Install
 
 Required: [node.js](https://nodejs.org/) > 0.12 or [io.js](https://iojs.org) > 1.0
 
 ```
-git clone https://github.com/danmer/c58-demos-downloader.git
-cd c58-demos-downloader
+git clone https://github.com/danmer/c58-media-downloader.git
+cd c58-media-downloader
 npm install
 ```
 
 ## Usage
 
+### Downloading galleries
+
 ```
-npm start [game_id1] [game_id2] ...
+node galleries.js
 ```
 
-### Game Ids
+### Downloading demos
+
+```
+node demos.js [game_id1] [game_id2] ...
+```
+
+#### Game Ids
 
 | id | game |
 | --:| :--- |

@@ -1,9 +1,12 @@
 {
-  "name": "c58-demos-downloader",
-  "version": "0.2.1",
-  "description": "The script for downloading demos from cyberfight.ru",
+  "name": "c58-media-downloader",
+  "version": "0.3.0",
+  "description": "The script for downloading photos and demos from cyberfight.ru",
   "license": "MIT",
-  "repository": "Danmer/c58-demos-downloader",
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/Danmer/c58-media-downloader"
+  },
   "author": {
     "name": "Egor Kotlyarov",
     "email": "danmer.ekb@gmail.com"
@@ -12,20 +15,28 @@
     "node": ">=0.12.0"
   },
   "files": [
-    "server.js"
+    "demos.js",
+    "galleries.js"
   ],
   "keywords": [
     "cyberfight",
     "c58",
     "demos",
     "demo",
-    "downloader"
+    "galleries",
+    "gallery",
+    "downloader",
+    "download"
   ],
   "dependencies": {
     "charset": "^1.0.0",
     "cheerio": "^0.19.0",
+    "glob": "^5.0.14",
+    "he": "^0.5.0",
     "iconv-lite": "^0.4.10",
     "lodash": "^3.10.0",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "pretty-bytes": "^2.0.1",
+    "sanitize-filename": "^1.4.1"
   }
 }
