@@ -16,6 +16,7 @@ var cheerio     = require('cheerio');
 var mkdirp      = require('mkdirp');
 var iconv       = require('iconv-lite');
 var prettyBytes = require('pretty-bytes');
+var he          = require('he');
 
 var gameIds = process.argv.splice(2);
 
@@ -179,7 +180,19 @@ function getDemoInfo(demoLink) {
         var fileId = demoHref.match(/file_id=(\d+)/)[1];
         var fileInfo = $infoTable.find('tr:nth-child(8)').eq(0).text().trim().split('\n');
         var fileName = fileInfo[0].trim();
-        var encodedName = iconv.encode(fileName, sourceCharset).toString('hex').toUpperCase().match(/.{1,2}/g).map(function(char){return '%'+char}).join('');
+        var encodedName = iconv.encode(fileName, sourceCharset).toString('hex').toUpperCase().match(/.{1,2}/g).map(function(char) { return '%' + char; }).join('');
+        var comments = _.map($('form > table'), function(el) {
+          var commentMeta = $(el).find('.cont[bgcolor="#e5e5e5"]').html().trim().match(/<b>#(\d+)<\/b> - (.*) - <a href="(|.+\/profile\/(\d+)\/)"><b>(.*)<\/b><\/a>/)/* || []*/;
+          var $commentContent = $(el).find('td[bgcolor="#efefef"] .cont');
+          return {
+            index: commentMeta[1],
+            authorId: commentMeta[4] || null,
+            authorName: commentMeta[5],
+            dateTime: commentMeta[2],
+            html: $commentContent.html().trim().replace(/<br>\s+<br>\s+<br>/, ''),
+            text: he.decode($commentContent.text().trim())
+          };
+        });
         var demoInfo = {
           source: demoLink,
           demoDir: 'demos/' + demoId,
@@ -195,7 +208,9 @@ function getDemoInfo(demoLink) {
           fileName: fileInfo[0].trim(),
           fileSize: fileInfo[2].trim().replace('(', '').replace(')', ''),
           fileLink: 'http://files.cyberfight.ru/' + fileId + '/' + fileName,
-          encodedLink: 'http://files.cyberfight.ru/' + fileId + '/' + encodedName
+          encodedLink: 'http://files.cyberfight.ru/' + fileId + '/' + encodedName,
+          commentsCount: comments.length,
+          comments: comments
         };
         console.log(demoInfo);
         resolve(demoInfo);
