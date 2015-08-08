@@ -120,14 +120,28 @@ function parseGalleryLink(galleryLink) {
             galleryId: galleryId
           };
         });
+        var comments = _.map($('form > table'), function(el) {
+          var commentMeta = $(el).find('.cont[bgcolor="#e5e5e5"]').html().trim().match(/<b>#(\d+)<\/b> - (.*) - <a href="(|.+\/profile\/(\d+)\/)"><b>(.*)<\/b><\/a>/)/* || []*/;
+          var $commentContent = $(el).find('td[bgcolor="#efefef"] .cont');
+          return {
+            index: commentMeta[1],
+            authorId: commentMeta[4] || null,
+            authorName: commentMeta[5],
+            dateTime: commentMeta[2],
+            html: $commentContent.html().trim(),
+            text: he.decode($commentContent.text().trim())
+          };
+        });
         var galleryInfo = {
           source: galleryLink,
           galleryId: galleryId,
           galleryTitle: $('table[width="1%"]').find('tr').eq(0).text().trim(),
           photosCount: photos.length,
+          comentsCount: comments.length,
           photos: _.uniq(photos, function(photo) {
             return photo.source;
-          })
+          }),
+          comments: comments
         };
         // console.log(galleryInfo);
         // console.log(photosLinks);
