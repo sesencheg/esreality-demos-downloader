@@ -14,10 +14,6 @@
   "engines": {
     "node": ">=0.12.0"
   },
-  "files": [
-    "demos.js",
-    "galleries.js"
-  ],
   "keywords": [
     "cyberfight",
     "c58",

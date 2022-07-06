@@ -1,5 +1,3 @@
 node_modules
-*demos*
-*galleries*
-!demos.js
-!galleries.js
+demos
+galleries
