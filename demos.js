@@ -29,7 +29,7 @@ function parseGameIds(gameIds) {
   return new Promise(function(resolve, reject) {
     console.log('parse game');
     var pagesLinks = [];
-  for (var i = 1 ; i <= 1; i++) {
+  for (var i = 1 ; i <= 102; i++) {
     pagesLinks.push('https://www.esreality.com/?a=demos&order=&age=&search=&event=&mod=&gametype=&map=&page='+i);
   }    
   parsePagesLinks(pagesLinks, gameIds).then(resolve);
