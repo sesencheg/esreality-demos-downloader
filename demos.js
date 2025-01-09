@@ -1,13 +1,13 @@
 /**
- * Cyberfight Demos Downloader
- * Repository: https://github.com/Danmer/c58-demos-downloader
- * Copyright 2015 Egor Kotlyarov aka Danmer
+ * Esreality Demos Downloader
+ * Repository: https://github.com/sesencheg/esreality-demos-downloader
+ * Copyright 2025 Sergey Kositsyn aka Sesen
  * Available under MIT license
  *
  * Usage: node demos.js [game_id1] [game_id2] ...
  */
 
-var http        = require('http');
+var http        = require('https');
 var fs          = require('fs');
 var path        = require('path');
 var _           = require('lodash');
@@ -24,67 +24,32 @@ parseGameIds(gameIds).then(function() {
   console.log('done!');
 });
 
-function parseGameIds(gamesIds) {
-  console.log('parse games ids:', gamesIds);
+function parseGameIds(gameIds) {
+  console.log('parse games ids:');  
   return new Promise(function(resolve, reject) {
-    var gameId;
-    var index = 0;
-    var gamesIdsCount = gamesIds.length;
-    nextGameId();
-    function nextGameId() {
-      gameId = gamesIds.shift();
-      if (gameId) {
-        index++;
-        console.log('parse game', gameId, '(' + index + '/' + gamesIdsCount + ')');
-        getPagesLinks(gameId).then(parsePagesLinks).then(nextGameId);
-      } else {
-        resolve();
-      }
-    }
+    console.log('parse game');
+    var pagesLinks = [];
+  for (var i = 1 ; i <= 1; i++) {
+    pagesLinks.push('https://www.esreality.com/?a=demos&order=&age=&search=&event=&mod=&gametype=&map=&page='+i);
+  }    
+  parsePagesLinks(pagesLinks, gameIds).then(resolve);
   });
 }
 
-function getPagesLinks(gameId) {
-  console.log('request pages links');
-  return new Promise(function(resolve, reject) {
-    http.get('http://cyberfight.ru/site/demos/search/?game_id=' + gameId + '&order_by=time_posted&order_type=desc&qry=&page=0', function(response) {
-      if (response.statusCode !== 200) {
-        console.error('error on request. status code not 200:', response.statusCode);
-        resolve([]);
-        return;
-      }
-      var sourceCharset = charset(response.headers['content-type']);
-      response.pipe(iconv.decodeStream(sourceCharset)).collect(function(error, decodedBody) {
-        if (error) {
-          console.error('error on requestStram', errors);
-          resolve([]);
-          return;
-        }
-        var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
-        var pagesLinks = _.uniq(_.map($('a[href^="/site/demos/search/?game_id=' + gameId + '"][href*="page"]'), function(el) {
-          return 'http://cyberfight.ru' + el.attribs.href;
-        }));
-        // get 1 random page link for test
-        // pagesLinks = _.sample(pagesLinks, 1);
-        resolve(pagesLinks);
-      });
-    });
-  });
-}
 
-function parsePagesLinks(pagesLinks) {
-  console.log('parse page links');
+function parsePagesLinks(pagesLinks, gameIds) {
+  console.log('parse page links');  
   return new Promise(function(resolve, reject) {
     var pageLink = '';
     var index = 0;
-    var pagesLinksCount = pagesLinks.length;
+    var pagesLinksCount = pagesLinks.length;    
     nextPageLink();
     function nextPageLink() {
       pageLink = pagesLinks.shift();
       if (pageLink) {
         index++;
         console.log('parse page link', pageLink, '(' + index + '/' + pagesLinksCount + ')');
-        getDemosLinks(pageLink).then(parseDemosLinks).then(nextPageLink);
+        getDemosLinks(pageLink, gameIds).then(parseDemosLinks).then(nextPageLink);
       } else {
         resolve();
       }
@@ -92,9 +57,9 @@ function parsePagesLinks(pagesLinks) {
   });
 }
 
-function getDemosLinks(pageLink) {
+function getDemosLinks(pageLink, gameIds) {
   console.log('request demos links on pageLink');
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {        
     http.get(pageLink, function(response) {
       if (response.statusCode !== 200) {
         console.error('error on request. status code not 200:', response.statusCode);
@@ -109,13 +74,14 @@ function getDemosLinks(pageLink) {
           return;
         }
         var $ = cheerio.load(decodedBody, {normalizeWhitespace: true, decodeEntities: false});
-        var demosLinks = _.map($('tr[valign="middle"] a[href^="/site/demos/"][href$="/"]'), function(el) {
-          return 'http://cyberfight.ru' + el.attribs.href;
+        var demosLinks = _.map($('tr[valign="top"] a[href^="/post/"][href$="/"]'), function(el) {             
+          if(gameIds.includes(el.parent.parent.children[3].children[0].data.trim())){
+            return {demoLink: 'https://esreality.com' + el.attribs.href, dateTime: el.parent.parent.children[1].children[0].data.trim(), game: el.parent.parent.children[3].children[0].data.trim(), mod: el.parent.parent.children[5].children[0].data.trim(), type: el.parent.parent.children[7].children[0].data.trim(), map: el.parent.parent.children[15].children[0].data.trim(), text: el.attribs.title, tourney: el.parent.parent.children[17].children[1] != undefined ? el.parent.parent.children[17].children[1].children[0].data : ''}            
+          }          
         });
         demosLinks = _.uniq(demosLinks);
-        // get 3 random demo links for test
-        // demosLinks = _.sample(demosLinks, 3);
-        resolve(demosLinks);
+        demosLinks = demosLinks.filter(element => element != undefined);     
+        resolve(demosLinks);        
       });
     });
   });
@@ -132,7 +98,7 @@ function parseDemosLinks(demosLinks) {
       demoLink = demosLinks.shift();
       if (demoLink) {
         index++;
-        console.log('parse demo link', demoLink, '(' + index + '/' + demosLinksCount + ')');
+        console.log('parse demo link', demoLink.demoLink, '(' + index + '/' + demosLinksCount + ')');
         parseDemoLink(demoLink).then(nextDemoLink);
       } else {
         resolve();
@@ -143,10 +109,10 @@ function parseDemosLinks(demosLinks) {
 
 function parseDemoLink(demoLink) {
   return new Promise(function(resolve, reject) {
-    var infoPath = 'demos/' + demoLink.match(/\d+/)[0] + '/info.json';
+    var infoPath = 'demos/' + demoLink.demoLink.match(/\d+/)[0] + '/info.json';        
     fs.exists(infoPath, function(exists) {
-      if (!exists) {
-        getDemoInfo(demoLink).then(downloadDemo).then(resolve);
+      if (!exists) {        
+        getDemoInfo(demoLink).then(resolve);
       } else {
         console.log('already parsed. skip.');
         resolve();
@@ -158,7 +124,7 @@ function parseDemoLink(demoLink) {
 function getDemoInfo(demoLink) {
   console.log('requesting demo info');
   return new Promise(function(resolve, reject) {
-    http.get(demoLink, function(response) {
+    http.get(demoLink.demoLink, function(response) {
       var demosLinks = [];
       var sourceCharset = charset(response.headers['content-type']);
       if (response.statusCode !== 200) {
@@ -174,53 +140,36 @@ function getDemoInfo(demoLink) {
         }
         var sourceCharset = charset(response.headers['content-type']);
         var $ = cheerio.load(decodedBody, {normalizeWhitespace: false, decodeEntities: false});
-        var $infoTable = $('.blockheaddarkBig').parent().parent();
-        var demoId = demoLink.match(/\d+/)[0];
-        var demoHref = $infoTable.find('tr:nth-child(8) a')['0'].attribs.href;
-        var fileId = demoHref.match(/file_id=(\d+)/)[1];
-        var fileInfo = $infoTable.find('tr:nth-child(8)').eq(0).text().trim().split('\n');
-        var fileName = fileInfo[0].trim();
-        var encodedName = iconv.encode(fileName, sourceCharset).toString('hex').toUpperCase().match(/.{1,2}/g).map(function(char) { return '%' + char; }).join('');
-        var comments = _.map($('form > table'), function(el) {
-          var commentMeta = $(el).find('.cont[bgcolor="#e5e5e5"]').html().trim().match(/<b>#(\d+)<\/b> - (.*) - <a href="(|.+\/profile\/(\d+)\/)"><b>(.*)<\/b><\/a>/)/* || []*/;
-          var $commentContent = $(el).find('td[bgcolor="#efefef"] .cont');
-          return {
-            index: commentMeta[1],
-            authorId: commentMeta[4] || null,
-            authorName: commentMeta[5],
-            dateTime: commentMeta[2],
-            html: $commentContent.html().trim().replace(/<br>\s+<br>\s+<br>/, ''),
-            text: he.decode($commentContent.text().trim())
-          };
-        });
-        var demoInfo = {
-          source: demoLink,
-          demoDir: 'demos/' + demoId,
-          demoId: demoId,
-          name: $infoTable.find('tr:nth-child(1)').eq(0).text().trim(),
-          pov: $infoTable.find('tr:nth-child(2) td:nth-child(2)').eq(0).text().trim(),
-          map: $infoTable.find('tr:nth-child(3) td:nth-child(2)').eq(0).text().trim(),
-          type: $infoTable.find('tr:nth-child(4) td:nth-child(2)').eq(0).text().trim(),
-          tourney: $infoTable.find('tr:nth-child(5) td:nth-child(2)').eq(0).text().trim(),
-          downloads: $infoTable.find('tr:nth-child(6) td:nth-child(2)').eq(0).text().trim(),
-          description: $infoTable.find('tr:nth-child(7) td:nth-child(2)').eq(0).text().trim(),
-          fileId: fileId,
-          fileName: fileInfo[0].trim(),
-          fileSize: fileInfo[2].trim().replace('(', '').replace(')', ''),
-          fileLink: 'http://files.cyberfight.ru/' + fileId + '/' + fileName,
-          encodedLink: 'http://files.cyberfight.ru/' + fileId + '/' + encodedName,
-          commentsCount: comments.length,
-          comments: comments
-        };
-        console.log(demoInfo);
-        resolve(demoInfo);
+                
+        var demoBlock = $('.postcontent').find('a[href^="/download.php?file_id"]');
+
+    var demoId = demoLink.demoLink.match(/\d+/)[0];
+
+        var demoInfos = _.uniq(_.map($('a[href^="/download.php?file_id"]'), function(el) {
+          demoLink.encodedLink = 'https://esreality.com' + el.attribs.href;
+          demoLink.demoDir = 'demos/' + demoId;
+          demoLink.demoId = demoId;
+          demoLink.fileName = el.children[0].data.replace("&gt;&gt; ", "").replace(" &lt;&lt;", "");
+          return demoLink;          
+        }));            
+
+      var index = 0;      
+      nextDemoInfo();
+      function nextDemoInfo() {
+        demoInfo = demoInfos.shift();       
+        if (demoInfo) {
+          index++;          
+          downloadDemo(demoInfo).then(nextDemoInfo);
+        } else {
+          resolve();
+        }
+      }
       });
     });
   });
 }
 
-function downloadDemo(demoInfo) {
-  console.log('downloading demo');
+function downloadDemo(demoInfo) {  
   return new Promise(function(resolve, reject) {
     http.get(demoInfo.encodedLink, function(response) {
       response.on('error', function(error) {
@@ -228,6 +177,7 @@ function downloadDemo(demoInfo) {
         reject();
       });
       if (response.statusCode == 200) {
+        console.log('downloading demo');
         mkdirp(demoInfo.demoDir, function() {
           var demoPath = demoInfo.demoDir + '/' + demoInfo.fileName;
           var infoPath = demoInfo.demoDir + '/info.json';
@@ -248,9 +198,14 @@ function downloadDemo(demoInfo) {
           });
           response.pipe(fileStream);
         });
-      } else {
+      }
+      else if (response.statusCode == 302){
+        demoInfo.encodedLink = 'https://esreality.com' + response.headers.location;
+        downloadDemo(demoInfo).then(() => resolve());       
+      }
+      else {
         console.error('response error. status code:', response.statusCode);
-        reject();
+        resolve();
       }
     });
   });

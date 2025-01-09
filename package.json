@@ -1,26 +1,23 @@
 {
-  "name": "c58-media-downloader",
-  "version": "0.3.0",
-  "description": "The script for downloading photos and demos from cyberfight.ru",
+  "name": "esreality-demos-downloader",
+  "version": "0.0.1",
+  "description": "The script for downloading demos from esreality.com",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/Danmer/c58-media-downloader"
+    "url": "https://github.com/sesencheg/esreality-demos-downloader"
   },
   "author": {
     "name": "Egor Kotlyarov",
-    "email": "danmer.ekb@gmail.com"
+    "email": "sesencheg174@gmail.com"
   },
   "engines": {
     "node": ">=0.12.0"
   },
   "keywords": [
-    "cyberfight",
-    "c58",
+    "esreality",    
     "demos",
-    "demo",
-    "galleries",
-    "gallery",
+    "demo",    
     "downloader",
     "download"
   ],
